@@ -72,7 +72,7 @@ fi
 
 # Log writer as markdown
 function write_log () {
-  if [ -z ${task_name} ] ; then
+  if [ -z "${task_name}" ] ; then
     # Termination while break time.
     return
   fi
