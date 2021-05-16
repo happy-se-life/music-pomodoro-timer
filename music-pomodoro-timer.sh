@@ -12,7 +12,7 @@
 #   macOS Big Sur
 #
 # Auther:
-#   Twitter: @happy_se_life
+#   GitHub: @happy-se-life
 #
 ## You can modify following constants.
 #
@@ -61,20 +61,33 @@ max_short_break_time=$(($CONST_SHORT_BREAK_TIME * 60))
 max_long_break_time=$(($CONST_LONG_BREAK_TIME * 60))
 concentration_cycle=1
 short_break_count=1
-log_file=`date "+%Y%m%d.log"`
+log_file=`date "+%Y%m%d_log.md"`
+task_name=""
+duration=0
 
 if [ ! -f ${CONST_BREAK_TIME_BGM_FILE} ] ; then
   echo -en "BGM not found. Exited.\n"
   exit 1
 fi
 
-# Log writer
+# Log writer as markdown
 function write_log () {
-  echo -en "`date "+%Y/%m/%d %H:%M:%S"` : $1\n" >> ${log_file}
+  if [ -z ${task_name} ] ; then
+    # Termination while break time.
+    return
+  fi
+  if [ ! -f $log_file ] ; then
+    # Header
+    echo -en "| Date time           | Task name                                | Duration |\n" > ${log_file}
+    echo -en "|:--------------------|:-----------------------------------------|---------:|\n" >> ${log_file}
+    #           2021/05/16 20:35:16 | 1234567890123456789012345678901234567890       3600
+  fi
+  # Body
+  printf "| %-19s | %-40s | %8d |\n" "`date "+%Y/%m/%d %H:%M:%S"`" "`echo ${task_name} | cut -c 1-40`" $duration >> ${log_file}
 }
 
 # TODO
-# trap 'write_log "Stopped by user."' SIGINT
+trap "write_log; clear; cat ${log_file}; echo -en \"Stopped by user.\n\"; exit" SIGINT
 
 # Play BGM
 function play_bgm () {
@@ -107,40 +120,37 @@ do
   
   # Start concentration time
   say ${CONST_VOICE_START_TO_WORK}
-  write_log "Task name is ${task_name}. Cycle=$concentration_cycle"
-  write_log "Concentration was started."
-  st=`date "+%s"`
+  concentration_time=0
   for((i=0; i<$max_concentration_time; i++))
   do
     progress=$((($i + 1) * 100 / $max_concentration_time))
     echo -en "\r${progress}%"
     sleep 1
+    concentration_time=$(($concentration_time + 1))
+    duration=$(($concentration_time / 60))
   done
   say ${CONST_VOICE_STOP_TO_WORK}
-  ed=`date "+%s"`
-  duration=$((($ed - $st) / 60))
-  write_log "Task name is ${task_name}. Cycle=$concentration_cycle. duration was $duration minutes."
-  write_log "Concentration was ended."
+  write_log
+
+  # Init.
+  task_name=""
+  duration=0
   echo -en "\n"
   
-  # Start break time
+  # Break time
   if [ $short_break_count -lt $CONST_SHORT_BREAK_CYCLE ] ; then
-    # Short break time
+    # Short break
     say ${CONST_VOICE_TAKE_SHORT_BREAK}
-    echo -en "Short break time.\n"
-    write_log "Short break was started."
+    echo -en "Short break.\n"
     play_bgm $max_short_break_time
     say ${CONST_VOICE_STOP_SHORT_BREAK}
-    write_log "Short break was ended."
     short_break_count=$(($short_break_count + 1))
   else
-    # Long break time
+    # Long break
     say ${CONST_VOICE_TAKE_LONG_BREAK}
-    echo -en "Long break time.\n"
-    write_log "Long break was started."
+    echo -en "Long break.\n"
     play_bgm $max_long_break_time
     say ${CONST_VOICE_STOP_LONG_BREAK}
-    write_log "Long break was ended."
     short_break_count=0
   fi
   if [ $short_break_count -eq $CONST_SHORT_BREAK_CYCLE ] ; then

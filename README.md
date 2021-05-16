@@ -1,6 +1,10 @@
 # music-pomodoro-timer
 This is pomodoro timer made by only bash for macOS.
 
+## What's new
+* Changed the log format to markdown.
+* Now traps Ctrl + C.
+
 ## Features
 * You can keep playing BGM during breaks. This is better than an alarm only.
 * Audio guide.
